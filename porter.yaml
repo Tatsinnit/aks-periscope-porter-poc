@@ -1,0 +1,79 @@
+# This is the configuration for Porter
+# You must define steps for each action, but the rest is optional
+# See https://porter.sh/author-bundles for documentation on how to configure your bundle
+# Uncomment out the sections below to take full advantage of what Porter can do!
+
+name: aks-periscope-porter
+version: 0.1.16
+description: "A porter bundle to deploy aks-periscope (https://github.com/Azure/aks-periscope)"
+# TODO: update the registry to your own, e.g. myregistry
+registry: tatsat/
+
+# If you want to customize the Dockerfile in use, uncomment the line below and update the referenced file. 
+# See https://porter.sh/custom-dockerfile/
+#dockerfile: Dockerfile.tmpl
+
+mixins:
+  - exec
+  - kubernetes:
+      clientVersion: v1.20.13
+
+install:
+  - exec:
+        description: "Prepare the AKS Deployment"
+        command: ./helpers.sh
+        arguments:
+          - install
+  - kubernetes:
+          description: "Deploy AKS Periscope in AKS cluster."
+          manifests:
+            - "/cnab/app/manifests/aks-periscope.yaml"
+          wait: true
+  - exec:
+        description: "Clean up for aks-periscope deployment."
+        command: ./helpers.sh
+        arguments:
+          - cleanup
+
+upgrade:
+  - exec:
+      description: "World 2.0"
+      command: ./helpers.sh
+      arguments:
+        - upgrade
+
+uninstall:
+  - exec:
+      description: "Delete aks periscope deployed pods"
+      command: ./helpers.sh
+      arguments:
+        - uninstall
+
+# Below is an example of how to define credentials
+# See https://porter.sh/author-bundles/#credentials
+#credentials:
+#  - name: kubeconfig
+#    path: /root/.kube/config
+#  - name: username
+#    env: USERNAME
+
+# Below is an example of how to define parameters
+# See https://porter.sh/author-bundles/#parameters
+#parameters:
+#  - name: mysql_user
+#    type: string
+#    default: wordpress
+
+# Define Azure Servide Operator (ASO) related credentials
+# See https://porter.sh/author-bundles/#credentials
+credentials:
+  - name: AZURE_BLOB_ACCOUNT_NAME
+    type: string
+    env: PORTER_AZURE_BLOB_ACCOUNT_NAME
+  - name: AZURE_BLOB_CONTAINER_NAME
+    env: PORTER_AZURE_BLOB_CONTAINER_NAME
+  - name: AZURE_BLOB_SAS_KEY
+    env: PORTER_AZURE_BLOB_SAS_KEY
+  - name: kubeconfig
+    path: /root/.kube/config
+
